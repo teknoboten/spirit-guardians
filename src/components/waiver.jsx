@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import SignaturePad from 'react-signature-canvas';
 import { Formik, Field, Form } from 'formik';
 
-const Register = () => {
+const Waiver = () => {
   const sigPad = useRef(null);
 
   const clearSignature = () => {
@@ -23,18 +23,65 @@ const Register = () => {
           guardianName: '',
           dateSigned: '',
           photoConsent: '',
-          signature: '', // Add a field for the signature
+          signature: '',
         }}
         onSubmit={(values, actions) => {
-          console.log('Form data:', values);
-
           // When submitting the form, convert the signature canvas to data URL and store it in the form values
-          if (sigPad.current && !sigPad.current.isEmpty()) {
-            values.signature = sigPad.current
-              .getTrimmedCanvas()
-              .toDataURL('image/png');
-          }
-          alert(JSON.stringify(values, null, 2));
+          // if (sigPad.current && !sigPad.current.isEmpty()) {
+          //   values.signature = sigPad.current
+          //     .getTrimmedCanvas()
+          //     .toDataURL('image/png');
+          // }
+          // fetch('/api/register', {
+          //   method: 'POST',
+          //   body: JSON.stringify(values),
+          //   headers: {
+          //     'Content-Type': 'application/json',
+          //   },
+          // })
+          //   .then((response) => response.json())
+          //   .then((data) => {
+          //     console.log('Success:', data);
+          //     alert('Form submitted successfully!');
+          //     actions.resetForm(); // Optionally reset the form after successful submission
+          //   })
+          //   .catch((error) => {
+          //     console.error('Error:', error);
+          //     alert('Failed to submit the form.');
+          //   });
+
+          // actions.setSubmitting(false); // Ensure to set submitting to false after the operation is done
+
+          fetch('/api/generatePdf', {
+            method: 'POST',
+            body: JSON.stringify(values),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+            .then((response) => {
+              // Ensure the response is OK, then return the blob
+              if (response.ok) return response.blob();
+              // throw new Error('Network response was not ok.');
+            })
+            .then((blob) => {
+              // Create a URL for the blob object
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = url;
+              a.download = 'form-submission.pdf'; // Name the file
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              alert('PDF downloaded!');
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+              alert('Failed to download PDF.');
+            });
+
+          actions.setSubmitting(false);
         }}
       >
         {(formik) => (
@@ -100,6 +147,7 @@ const Register = () => {
                 name="birthDate"
                 type="date"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value="1997-02-05" //TO DO: Remove this!
               />
             </div>
 
@@ -205,7 +253,7 @@ const Register = () => {
 
             <div>
               <label
-                htmlFor="parentName"
+                htmlFor="guardianName"
                 className="block text-sm font-medium text-gray-700"
               >
                 Parent/guardian name (please print)
@@ -219,7 +267,10 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="guardianName"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Parent/guardian Signature
               </label>
               <SignaturePad
@@ -251,8 +302,9 @@ const Register = () => {
               <Field
                 id="dateSigned"
                 name="dateSigned"
-                type="date" // Specifying input type as date
+                type="date"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value="2024-03-05" //TO DO: Remove this!
               />
             </div>
 
@@ -269,4 +321,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Waiver;

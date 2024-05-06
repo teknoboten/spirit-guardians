@@ -1,5 +1,5 @@
 // import Form from '@/components/form';
-import Register from '@/components/register';
+import Waiver from '@/components/waiver';
 import Head from 'next/head';
 
 const HomePage = () => {
@@ -24,7 +24,7 @@ const HomePage = () => {
           program.
         </p>
 
-        <Register />
+        <Waiver />
       </div>
     </main>
   );
