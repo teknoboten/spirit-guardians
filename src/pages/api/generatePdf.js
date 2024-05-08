@@ -1,8 +1,11 @@
 import PdfPrinter from 'pdfmake';
+// import { fonts } from '../../../utils/fonts';
 import { fonts } from '../../../utils/fonts';
 
 export default async (req, res) => {
+  console.log('lets make a PDF!');
   if (req.method === 'POST') {
+    console.log(req.body);
     const printer = new PdfPrinter(fonts);
     const docDefinition = {
       content: [

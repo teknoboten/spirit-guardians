@@ -1,4 +1,3 @@
-// import Form from '@/components/form';
 import Register from '@/components/register';
 import Head from 'next/head';
 
