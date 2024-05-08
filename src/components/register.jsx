@@ -47,17 +47,8 @@ const Register = () => {
         validationSchema={validationSchema}
         onSubmit={(values, actions) => {
           console.log('Submitting Form', values);
-          if (sigPad.current && !sigPad.current.isEmpty()) {
-            values.signature = sigPad.current
-              .getTrimmedCanvas()
-              .toDataURL('image/png');
-          } else {
-            actions.setFieldError('signature', 'Signature is required');
-            actions.setSubmitting(false);
-            return;
-          }
 
-          fetch('/api/generatepdf', {
+          fetch('/api/signup', {
             method: 'POST',
             body: JSON.stringify(values),
             headers: {
@@ -359,6 +350,8 @@ const Register = () => {
                     className: `signature-canvas mt-1 block w-full px-3 py-2 border ${formik.errors.signature && formik.touched.signature ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`,
                     width: 500,
                     height: 200,
+                    id: 'signature',
+                    name: 'signature',
                   }}
                   onEnd={() => {
                     if (sigPad.current && !sigPad.current.isEmpty()) {
