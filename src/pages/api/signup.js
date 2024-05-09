@@ -1,12 +1,25 @@
 import PdfPrinter from 'pdfmake';
 import { fonts } from '../../../utils/fonts';
+import { google } from 'googleapis';
+import { Readable } from 'stream'; // Import Readable from stream module
 
-export default async (req, res) => {
-  console.log('lets make a PDF!');
-  if (req.method === 'POST') {
-    console.log(req.body);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not allowed' });
+  }
+
+  try {
+    // Initialize Google Drive API
+    const auth = new google.auth.GoogleAuth({
+      keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    });
+
+    const drive = google.drive({
+      version: 'v3',
+      auth,
+    });
     const printer = new PdfPrinter(fonts);
-
     const docDefinition = {
       content: [
         { text: 'AWG Sign Up & Waiver', style: 'header' },
@@ -120,13 +133,45 @@ export default async (req, res) => {
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     let chunks = [];
     pdfDoc.on('data', (chunk) => chunks.push(chunk));
-    pdfDoc.on('end', () => {
-      const result = Buffer.concat(chunks);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.send(result);
+    pdfDoc.on('end', async () => {
+      const pdfBuffer = Buffer.concat(chunks);
+
+      // Convert buffer to stream
+      const pdfStream = new Readable();
+      pdfStream.push(pdfBuffer);
+      pdfStream.push(null); // Indicate the end of the stream
+
+      // Upload to Google Drive
+      try {
+        const response = await drive.files.create({
+          requestBody: {
+            name: `${req.body.firstName + '-' + req.body.lastName + '' + req.body.dateSigned}`,
+            mimeType: 'application/pdf',
+            parents: ['1VB6hUdOFZPJ9SAeZI1291264INHqfjkj'],
+          },
+          media: {
+            mimeType: 'application/pdf',
+            body: pdfStream,
+          },
+        });
+
+        console.log('pdf uploaded', response.data);
+        res.status(200).json({
+          fileId: response.data.id,
+          message: 'File uploaded successfully',
+        });
+      } catch (uploadError) {
+        console.error('error uploading PDF', uploadError);
+        res.status(500).json({
+          error: 'failed to upload PDF',
+          details: uploadError.message,
+        });
+      }
     });
+
     pdfDoc.end();
-  } else {
-    res.status(405).end();
+  } catch (err) {
+    console.error('error setting up PDF generation or google drive', err);
+    res.status(500).json({ error: 'server error', details: err.message });
   }
-};
+}
