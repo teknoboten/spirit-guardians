@@ -3,15 +3,24 @@ import { fonts } from '../../../utils/fonts';
 import { google } from 'googleapis';
 import { Readable } from 'stream'; // Import Readable from stream module
 
+const { Buffer } = require('buffer');
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not allowed' });
   }
 
   try {
+    // Decode the Base64 string to get the credentials JSON
+    const credentialsJson = Buffer.from(
+      process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64,
+      'base64'
+    ).toString('utf8');
+    const credentials = JSON.parse(credentialsJson);
+
     // Initialize Google Drive API
     const auth = new google.auth.GoogleAuth({
-      keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      credentials: credentials,
       scopes: ['https://www.googleapis.com/auth/drive.file'],
     });
 
@@ -20,6 +29,8 @@ export default async function handler(req, res) {
       auth,
     });
     const printer = new PdfPrinter(fonts);
+
+    //Get stuff from the form and write to PDF
     const docDefinition = {
       content: [
         { text: 'AWG Sign Up & Waiver', style: 'header' },
@@ -37,10 +48,6 @@ export default async function handler(req, res) {
           text: `Last Name: ${req.body.lastName}`,
           style: 'field',
         },
-        // {
-        //   text: `Email: ${req.body.email}`,
-        //   style: 'field',
-        // },
         {
           text: `Date of Birth: ${req.body.birthDate}`,
           style: 'field',
@@ -132,7 +139,7 @@ export default async function handler(req, res) {
 
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     let chunks = [];
-    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('data', (chunk) => chunks.push(chunk)); //lol chunks
     pdfDoc.on('end', async () => {
       const pdfBuffer = Buffer.concat(chunks);
 
